@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de BIN de Cartões</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            animation: fadeInBlur 1.5s ease-out forwards;
+        }
+        @keyframes fadeInBlur {
+            0% {
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 10px 20px;
+            display: inline-block;
+        }
+        label {
+            color: #111;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        textarea {
+            width: 80%;
+            height: 100px;
+            margin: 0 auto 15px auto;
+            padding: 10px;
+            border-radius: 5px;
+            border: 3px solid #800080;
+            font-size: 14px;
+            display: block;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            margin: 5px 0;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        button#verificar {
+            background-color: #800080;
+        }
+        button#verificar:hover {
+            background-color: #5a005a;
+        }
+        button#copiar {
+            background-color: #28a745;
+            animation: rgbAnimation 3s infinite;
+        }
+        @keyframes rgbAnimation {
+            0% { background-color: rgb(255, 0, 0); }
+            33% { background-color: rgb(0, 255, 0); }
+            66% { background-color: rgb(0, 0, 255); }
+            100% { background-color: rgb(255, 0, 0); }
+        }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+        .results h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .results ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .results ul li {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .audio-player {
+            margin-top: 20px;
+        }
+        .signature {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: #111;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const binEspecificas = [
+                '498401', '498442', '498408', '498453', '498407',
+                '485464', '407843', '550292', '553636', '527407', '530994', '531681', '483151', '541555', '415274', '527523',
+                '528392', '407505', '481274', '523431', '546452', '535081', '526807', '601101', '477175', '520048', '523431', '498401', '427167',
+                '498408', '498407', '498423', '498453', '531260', '498401', '498556', '485646', 
+                '444456', '407843', '407838', '498431', '404024', '415274',
+                '407838', '550209', '516292', '553636', '601100', '527519',
+            ];
+
+            function verificarBIN(event) {
+                event.preventDefault();
+                
+                const cartoes = document.getElementById('cartoes').value.trim().split('\n');
+                const resultados = [];
+
+                cartoes.forEach(cartao => {
+                    cartao = cartao.trim();
+                    if (!cartao) return;
+
+                    for (const bin of binEspecificas) {
+                        if (cartao.startsWith(bin)) {
+                            const partes = cartao.split('|');
+                            if (partes.length !== 4) {
+                                console.warn("Formato inválido para a linha:", cartao);
+                                continue;
+                            }
+                            const [numero, mes, ano, cvv] = partes;
+                            const anoFormatado = ano.slice(-2);
+                            const resultadoFormatado = `${numero}|${mes}|${anoFormatado}|${cvv}`;
+                            resultados.push(resultadoFormatado);
+                            break;
+                        }
+                    }
+                });
+
+                mostrarResultados(resultados);
+            }
+
+            function mostrarResultados(resultados) {
+                const resultadosUl = document.querySelector('.results ul');
+                resultadosUl.innerHTML = resultados.map(resultado => `<li>${resultado}</li>`).join('');
+
+                if (resultados.length === 0) {
+                    resultadosUl.innerHTML = "<li>Nenhum cartão correspondente encontrado.</li>";
+                }
+            }
+
+            document.getElementById('binForm').addEventListener('submit', verificarBIN);
+
+            function copiarResultados() {
+                const resultados = document.querySelector('.results ul');
+                const range = document.createRange();
+                range.selectNode(resultados);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                try {
+                    document.execCommand('copy');
+                    alert('Resultados copiados para a área de transferência!');
+                } catch (err) {
+                    console.error('Falha ao copiar: ', err);
+                }
+
+                selection.removeAllRanges();
+            }
+
+            function carregarMusica(event) {
+                const audioPlayer = document.getElementById('audioPlayer');
+                const file = event.target.files[0];
+                if (file) {
+                    const fileURL = URL.createObjectURL(file);
+                    audioPlayer.src = fileURL;
+                    audioPlayer.play();
+                }
+            }
+
+            document.getElementById('copiar').addEventListener('click', copiarResultados);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>&lt;/&gt;SOARESDEV!</h1>
+        <form id="binForm">
+            <label for="cartoes">Cole os cartões! (um por linha):</label>
+            <textarea name="cartoes" id="cartoes"></textarea><br>
+            <button type="submit" id="verificar">Verificar BIN</button>
+            <button type="button" id="copiar">Copiar Resultados</button>
+        </form>
+        <div class="results">
+            <h2>Cartões Filtrados:</h2>
+            <ul>
+                <!-- Os itens da lista serão inseridos aqui pelo JavaScript -->
+            </ul>
+        </div>
+        <div class="audio-player">
+            <input type="file" accept="audio/*" onchange="carregarMusica(event)">
+            <audio id="audioPlayer" controls>
+                Seu navegador não suporta o elemento de áudio.
+            </audio>
+        </div>
+    </div>
+    <div class="signature">
+        Desenvolvido por &lt;/&gt;SoaresT ❤️
+    </div>
+</body>
+</html>
